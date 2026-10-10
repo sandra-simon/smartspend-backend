@@ -68,6 +68,7 @@ def get_dashboard_summary(
         net_available_capital_change_percentage = None
 
     # Calculate burned and retained percentages
+
     if total_income > 0:
         burned_percentage = (
             total_expenses / total_income
@@ -76,9 +77,13 @@ def get_dashboard_summary(
         retained_percentage = (
             net_available_capital / total_income
         ) * Decimal("100")
+    elif total_expenses > 0:
+        burned_percentage = Decimal("100")
+        retained_percentage = Decimal("0")
     else:
         burned_percentage = Decimal("0")
         retained_percentage = Decimal("0")
+
 
     previous_period_label = datetime(
         previous_year,

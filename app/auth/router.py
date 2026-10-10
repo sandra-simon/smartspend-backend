@@ -47,6 +47,7 @@ def register(
         data=data,
     )
 
+
 @router.post(
     "/login",
     response_model=LoginResponse,
@@ -60,6 +61,7 @@ def login(
         db=db,
         data=data,
     )
+
 
 @router.post(
     "/refresh",
