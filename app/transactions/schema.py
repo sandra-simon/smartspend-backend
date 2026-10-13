@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -61,3 +61,10 @@ class TransactionDetailResponse(TransactionResponse):
 class TransactionListResponse(BaseModel):
     items: list[TransactionResponse]
     pagination: dict
+
+
+class DailyNetTotalResponse(BaseModel):
+    date: date
+    income_total: Decimal
+    expense_total: Decimal
+    net_total: Decimal

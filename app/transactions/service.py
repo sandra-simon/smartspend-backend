@@ -8,6 +8,7 @@ from app.budgets import repository as budget_repository
 from app.categories.model import Category
 from app.transactions import repository
 from app.transactions.schema import (
+    DailyNetTotalResponse,
     MonthlyBudgetResponse,
     TransactionCreateRequest,
     TransactionDetailResponse,
@@ -143,6 +144,31 @@ def get_transactions(
             "total_pages": total_pages,
         },
     )
+
+
+def get_daily_net_totals(
+    db: Session,
+    user_id: int,
+    type: str | None = None,
+    category_id: int | None = None,
+    search: str | None = None,
+    date_from=None,
+    date_to=None,
+) -> list[DailyNetTotalResponse]:
+    totals = repository.get_daily_net_totals(
+        db=db,
+        user_id=user_id,
+        type=type,
+        category_id=category_id,
+        search=search,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+    return [
+        DailyNetTotalResponse(**daily_total)
+        for daily_total in totals
+    ]
 
 
 def get_transaction_detail(
@@ -293,6 +319,7 @@ def update_transaction(
         "amount": data.amount,
         "currency": data.currency,
         "title": data.title,
+        "transaction_at": data.transaction_at,
     }
 
     if "merchant" in data.model_fields_set:

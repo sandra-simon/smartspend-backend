@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+from decimal import Decimal
 
 class DashboardPeriod(BaseModel):
     year: int
@@ -9,6 +9,7 @@ class DashboardPeriod(BaseModel):
 class DashboardComparison(BaseModel):
     previous_period_label: str
     net_available_capital_change_percentage: float | None
+    net_available_capital_change: Decimal | None
 
 
 class DashboardCashflow(BaseModel):

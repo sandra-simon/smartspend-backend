@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import get_current_user_id
 from app.transactions.schema import (
+    DailyNetTotalResponse,
     TransactionCreateRequest,
     TransactionDetailResponse,
     TransactionListResponse,
@@ -16,6 +17,7 @@ from app.transactions.schema import (
 from app.transactions.service import (
     create_transaction,
     get_transactions,
+    get_daily_net_totals,
     get_transaction_detail,
     update_transaction,
     delete_transaction,
@@ -82,6 +84,30 @@ def list_transactions(
         date_to=date_to,
         sort_by=sort_by,
         sort_order=sort_order,
+    )
+
+
+@router.get(
+    "/daily-net-totals",
+    response_model=list[DailyNetTotalResponse],
+)
+def get_daily_net_totals_endpoint(
+    user_id: Annotated[int, Depends(get_current_user_id)],
+    db: Session = Depends(get_db),
+    type: Literal["income", "expense"] | None = Query(default=None),
+    category_id: int | None = Query(default=None, ge=1),
+    search: str | None = Query(default=None),
+    date_from: datetime | None = Query(default=None),
+    date_to: datetime | None = Query(default=None),
+) -> list[DailyNetTotalResponse]:
+    return get_daily_net_totals(
+        db=db,
+        user_id=user_id,
+        type=type,
+        category_id=category_id,
+        search=search,
+        date_from=date_from,
+        date_to=date_to,
     )
 
 

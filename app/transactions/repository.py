@@ -1,8 +1,9 @@
 _UNSET = object()
+
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, case, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.transactions.model import Transaction
@@ -51,7 +52,6 @@ def get_transactions(
     offset: int = 0,
     limit: int = 20,
 ) -> tuple[list[Transaction], int]:
-
     statement = (
         select(Transaction)
         .options(selectinload(Transaction.category))
@@ -61,22 +61,13 @@ def get_transactions(
 
     count_statement = (
         select(func.count(Transaction.transaction_id))
-        .join(
-            Category,
-            Category.category_id == Transaction.category_id,
-        )
-        .where(
-            Transaction.user_id == user_id
-        )
+        .join(Category, Category.category_id == Transaction.category_id)
+        .where(Transaction.user_id == user_id)
     )
 
     if type is not None:
-        statement = statement.where(
-            Category.type == type
-        )
-        count_statement = count_statement.where(
-            Category.type == type
-        )
+        statement = statement.where(Category.type == type)
+        count_statement = count_statement.where(Category.type == type)
 
     if category_id is not None:
         statement = statement.where(
@@ -88,7 +79,6 @@ def get_transactions(
 
     if search:
         search_pattern = f"%{search}%"
-
         search_filter = (
             Transaction.title.ilike(search_pattern)
             | Transaction.merchant.ilike(search_pattern)
@@ -182,6 +172,107 @@ def update_transaction(
     db.refresh(transaction)
 
     return transaction
+
+
+def get_daily_net_totals(
+    db: Session,
+    user_id: int,
+    type: str | None = None,
+    category_id: int | None = None,
+    search: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+) -> list[dict]:
+    # Group timestamps by their calendar date in Indian Standard Time.
+    date_expression = func.date(
+        Transaction.transaction_at.op("AT TIME ZONE")(
+            "Asia/Kolkata"
+        )
+    )
+
+    income_total = func.coalesce(
+        func.sum(
+            case(
+                (Category.type == "income", Transaction.amount),
+                else_=0,
+            )
+        ),
+        0,
+    )
+
+    expense_total = func.coalesce(
+        func.sum(
+            case(
+                (Category.type == "expense", Transaction.amount),
+                else_=0,
+            )
+        ),
+        0,
+    )
+
+    statement = (
+        select(
+            date_expression.label("date"),
+            income_total.label("income_total"),
+            expense_total.label("expense_total"),
+        )
+        .join(
+            Category,
+            Category.category_id == Transaction.category_id,
+        )
+        .where(Transaction.user_id == user_id)
+    )
+
+    if type is not None:
+        statement = statement.where(Category.type == type)
+
+    if category_id is not None:
+        statement = statement.where(
+            Transaction.category_id == category_id
+        )
+
+    if search:
+        search_pattern = f"%{search}%"
+        search_filter = (
+            Transaction.title.ilike(search_pattern)
+            | Transaction.merchant.ilike(search_pattern)
+            | Transaction.notes.ilike(search_pattern)
+        )
+        statement = statement.where(search_filter)
+
+    if date_from is not None:
+        statement = statement.where(
+            Transaction.transaction_at >= date_from
+        )
+
+    if date_to is not None:
+        statement = statement.where(
+            Transaction.transaction_at <= date_to
+        )
+
+    statement = (
+        statement
+        .group_by(date_expression)
+        .order_by(date_expression.desc())
+    )
+
+    rows = db.execute(statement).all()
+    results = []
+
+    for row in rows:
+        income = Decimal(str(row.income_total))
+        expense = Decimal(str(row.expense_total))
+
+        results.append(
+            {
+                "date": row.date,
+                "income_total": income,
+                "expense_total": expense,
+                "net_total": income - expense,
+            }
+        )
+
+    return results
 
 
 def delete_transaction(

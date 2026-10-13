@@ -44,6 +44,25 @@ def get_monthly_totals(
     return total_income, total_expenses
 
 
+def has_monthly_transactions(
+    db: Session,
+    user_id: int,
+    year: int,
+    month: int,
+) -> bool:
+    statement = (
+        select(Transaction.transaction_id)
+        .where(
+            Transaction.user_id == user_id,
+            func.extract("year", Transaction.transaction_at) == year,
+            func.extract("month", Transaction.transaction_at) == month,
+        )
+        .limit(1)
+    )
+
+    return db.execute(statement).first() is not None
+
+
 def get_monthly_expense_breakdown(
     db: Session,
     user_id: int,

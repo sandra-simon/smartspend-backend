@@ -55,17 +55,37 @@ def get_dashboard_summary(
         previous_income - previous_expenses
     )
 
-    # Calculate percentage change from previous month
-    if previous_net_available_capital != 0:
+    
+        # Check whether the previous month has any transactions
+    previous_month_has_data = repository.has_monthly_transactions(
+        db=db,
+        user_id=user_id,
+        year=previous_year,
+        month=previous_month,
+    )
+
+    # Calculate comparison only when previous-month data exists
+    if not previous_month_has_data:
+        net_available_capital_change_percentage = None
+        net_available_capital_change = None
+    elif (
+        previous_net_available_capital <= 0
+        or net_available_capital < 0
+    ):
+        net_available_capital_change_percentage = None
+        net_available_capital_change = (
+            net_available_capital - previous_net_available_capital
+        )
+    else:
         net_available_capital_change_percentage = (
             (
                 net_available_capital
                 - previous_net_available_capital
             )
-            / abs(previous_net_available_capital)
+            / previous_net_available_capital
         ) * Decimal("100")
-    else:
-        net_available_capital_change_percentage = None
+        net_available_capital_change = None
+
 
     # Calculate burned and retained percentages
 
@@ -101,7 +121,10 @@ def get_dashboard_summary(
         total_expenses=total_expenses,
         comparison=DashboardComparison(
             previous_period_label=previous_period_label,
-            net_available_capital_change_percentage=net_available_capital_change_percentage,
+            net_available_capital_change_percentage=(
+                net_available_capital_change_percentage
+            ),
+            net_available_capital_change=net_available_capital_change,
         ),
         cashflow=DashboardCashflow(
             burned_percentage=burned_percentage,
