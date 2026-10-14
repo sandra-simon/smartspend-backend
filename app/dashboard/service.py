@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
@@ -13,6 +14,7 @@ from app.dashboard.schema import (
     DashboardSummaryResponse,
     DashboardTopExpenseCategory,
 )
+IST = ZoneInfo("Asia/Kolkata")
 
 
 def get_dashboard_summary(
@@ -22,7 +24,7 @@ def get_dashboard_summary(
     month: int | None = None,
 ) -> DashboardSummaryResponse:
     if year is None or month is None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(IST)
         year = now.year
         month = now.month
 
@@ -140,7 +142,7 @@ def get_dashboard_expense_split(
     month: int | None = None,
 ) -> DashboardExpenseSplitResponse:
     if year is None or month is None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(IST)
         year = now.year
         month = now.month
 

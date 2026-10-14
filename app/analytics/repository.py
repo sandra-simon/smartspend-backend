@@ -78,6 +78,7 @@ def get_expense_breakdown_for_range(
     return db.execute(statement).all()
 
 
+
 def get_cashflow_for_range(
     db: Session,
     user_id: int,
@@ -85,23 +86,19 @@ def get_cashflow_for_range(
     end_date: datetime,
     granularity: str,
 ) -> list:
+    # Convert each transaction timestamp to IST before grouping.
+    transaction_time_ist = (
+        Transaction.transaction_at.op("AT TIME ZONE")("Asia/Kolkata")
+    )
+
     if granularity == "day":
-        bucket = func.date_trunc(
-            "day",
-            Transaction.transaction_at,
-        )
+        bucket = func.date_trunc("day", transaction_time_ist)
 
     elif granularity == "week":
-        bucket = func.date_trunc(
-            "week",
-            Transaction.transaction_at,
-        )
+        bucket = func.date_trunc("week", transaction_time_ist)
 
     else:
-        bucket = func.date_trunc(
-            "month",
-            Transaction.transaction_at,
-        )
+        bucket = func.date_trunc("month", transaction_time_ist)
 
     statement = (
         select(

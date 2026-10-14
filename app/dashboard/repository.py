@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -6,6 +6,10 @@ from sqlalchemy.orm import Session
 from app.categories.model import Category
 from app.transactions.model import Transaction
 
+def transaction_time_ist():
+    return Transaction.transaction_at.op("AT TIME ZONE")(
+        "Asia/Kolkata"
+    )
 
 def get_monthly_totals(
     db: Session,
@@ -13,6 +17,7 @@ def get_monthly_totals(
     year: int,
     month: int,
 ) -> tuple:
+    transaction_ist = transaction_time_ist()
     statement = (
         select(
             Category.type,
@@ -24,8 +29,8 @@ def get_monthly_totals(
         )
         .where(
             Transaction.user_id == user_id,
-            func.extract("year", Transaction.transaction_at) == year,
-            func.extract("month", Transaction.transaction_at) == month,
+            func.extract("year", transaction_ist) == year,
+            func.extract("month", transaction_ist) == month,
         )
         .group_by(Category.type)
     )
@@ -50,12 +55,13 @@ def has_monthly_transactions(
     year: int,
     month: int,
 ) -> bool:
+    transaction_ist = transaction_time_ist()
     statement = (
         select(Transaction.transaction_id)
         .where(
             Transaction.user_id == user_id,
-            func.extract("year", Transaction.transaction_at) == year,
-            func.extract("month", Transaction.transaction_at) == month,
+            func.extract("year", transaction_ist) == year,
+            func.extract("month", transaction_ist) == month,
         )
         .limit(1)
     )
@@ -69,6 +75,7 @@ def get_monthly_expense_breakdown(
     year: int,
     month: int,
 ) -> list:
+    transaction_ist = transaction_time_ist()
     statement = (
         select(
             Category.category_id,
@@ -82,8 +89,8 @@ def get_monthly_expense_breakdown(
         .where(
             Transaction.user_id == user_id,
             Category.type == "expense",
-            func.extract("year", Transaction.transaction_at) == year,
-            func.extract("month", Transaction.transaction_at) == month,
+            func.extract("year", transaction_ist) == year,
+            func.extract("month", transaction_ist) == month,
         )
         .group_by(
             Category.category_id,

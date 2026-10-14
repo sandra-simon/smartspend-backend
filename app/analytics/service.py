@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
@@ -17,7 +18,7 @@ from app.analytics.schema import (
     AnalyticsTopCategory,
 )
 
-
+IST = ZoneInfo("Asia/Kolkata")
 VALID_PERIODS = {"weekly", "monthly", "yearly"}
 
 
@@ -38,10 +39,11 @@ def validate_period(period: str) -> str:
     return period
 
 
+
 def get_period_ranges(
     period: str,
 ) -> tuple[datetime, datetime, datetime, datetime]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(IST)
 
     if period == "weekly":
         current_start = (
@@ -53,6 +55,8 @@ def get_period_ranges(
             microsecond=0,
         )
         current_end = current_start + timedelta(days=7)
+        previous_start = current_start - timedelta(days=7)
+        previous_end = current_start
 
     elif period == "monthly":
         current_start = now.replace(
@@ -73,6 +77,18 @@ def get_period_ranges(
                 month=current_start.month + 1,
             )
 
+        if current_start.month == 1:
+            previous_start = current_start.replace(
+                year=current_start.year - 1,
+                month=12,
+            )
+        else:
+            previous_start = current_start.replace(
+                month=current_start.month - 1,
+            )
+
+        previous_end = current_start
+
     else:
         current_start = now.replace(
             month=1,
@@ -85,11 +101,10 @@ def get_period_ranges(
         current_end = current_start.replace(
             year=current_start.year + 1,
         )
-
-    duration = current_end - current_start
-
-    previous_end = current_start
-    previous_start = current_start - duration
+        previous_start = current_start.replace(
+            year=current_start.year - 1,
+        )
+        previous_end = current_start
 
     return (
         current_start,
