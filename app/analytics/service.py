@@ -469,7 +469,10 @@ def get_top_categories(
                     month=month,
                 )
 
-                if monthly_budget is None:
+                if (
+                    monthly_budget is None
+                    or monthly_budget.limit_amount is None
+                ):
                     monthly_budgets = []
                     break
 
@@ -507,7 +510,7 @@ def get_top_categories(
                 month=current_start.month,
             )
 
-            if budget:
+            if budget is not None and budget.limit_amount is not None:
                 limit = Decimal(str(budget.limit_amount))
                 remaining = limit - spent
 

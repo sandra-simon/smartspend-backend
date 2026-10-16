@@ -8,11 +8,12 @@ class BudgetRequest(BaseModel):
     limit_amount: Decimal = Field(gt=0)
 
 
+
 class BudgetResponse(BaseModel):
     budget_id: int
     category_id: int
     year: int
     month: int
-    limit_amount: Decimal
+    limit_amount: Decimal | None
     created_at: datetime
     updated_at: datetime

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from app.categories.defaults import create_default_categories
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -46,12 +47,25 @@ def register_user(
 
     password_hash = hash_password(data.password)
 
-    user = repository.create_user(
-        db=db,
-        username=data.username,
-        email=data.email,
-        password_hash=password_hash,
-    )
+    try:
+        user = repository.create_user(
+            db=db,
+            username=data.username,
+            email=data.email,
+            password_hash=password_hash,
+        )
+
+        create_default_categories(
+            db=db,
+            user_id=user.user_id,
+        )
+
+        db.commit()
+        db.refresh(user)
+
+    except Exception:
+        db.rollback()
+        raise
 
     return RegisterResponse(
         user_id=user.user_id,

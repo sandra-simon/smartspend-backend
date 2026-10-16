@@ -13,6 +13,7 @@ def get_user_by_email(
     return db.scalar(statement)
 
 
+
 def create_user(
     db: Session,
     username: str,
@@ -26,8 +27,7 @@ def create_user(
     )
 
     db.add(user)
-    db.commit()
-    db.refresh(user)
+    db.flush()
 
     return user
 

@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from app.categories import repository
 from app.categories.model import Category
@@ -13,7 +14,7 @@ from app.categories.schema import (
 )
 from app.budgets import repository as budget_repository
 
-
+IST = ZoneInfo("Asia/Kolkata")
 ALLOWED_CATEGORY_TYPES = {
     "income",
     "expense",
@@ -197,7 +198,7 @@ def update_category(
         type=data.type,
     )
 
-    current_date = datetime.now(timezone.utc)
+    current_date = datetime.now(IST)
 
     budget = repository.get_applicable_budget(
         db=db,
@@ -302,7 +303,7 @@ def get_categories(
     for category in categories:
 
         if year is None and month is None:
-            current_date = datetime.now(timezone.utc)
+            current_date = datetime.now(IST)
             budget_year = current_date.year
             budget_month = current_date.month
         else:

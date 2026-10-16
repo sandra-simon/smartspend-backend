@@ -1,9 +1,12 @@
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from app.budgets.model import Budget
 from app.transactions.model import Transaction
+
+IST = ZoneInfo("Asia/Kolkata")
 
 def get_budget(
     db: Session,
@@ -62,6 +65,7 @@ def delete_budget(
     db.commit()
 
 
+
 def get_applicable_budget(
     db: Session,
     category_id: int,
@@ -92,12 +96,16 @@ def get_category_monthly_spent(
     year: int,
     month: int,
 ) -> Decimal:
+    transaction_time_ist = Transaction.transaction_at.op("AT TIME ZONE")(
+        "Asia/Kolkata"
+    )
+
     total = db.scalar(
         select(func.coalesce(func.sum(Transaction.amount), 0))
         .where(
             Transaction.category_id == category_id,
-            func.extract("year", Transaction.transaction_at) == year,
-            func.extract("month", Transaction.transaction_at) == month,
+            func.extract("year", transaction_time_ist) == year,
+            func.extract("month", transaction_time_ist) == month,
         )
     )
 

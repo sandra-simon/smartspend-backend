@@ -1,11 +1,13 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from app.budgets import repository
 from app.budgets.schema import BudgetRequest, BudgetResponse
 from app.categories.model import Category
 
+IST = ZoneInfo("Asia/Kolkata")
 
 def get_budget(
     db: Session,
@@ -28,7 +30,7 @@ def get_budget(
         )
 
     if year is None and month is None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(IST)
         year = now.year
         month = now.month
 
@@ -91,7 +93,7 @@ def set_budget(
             },
         )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(IST)
     year = now.year
     month = now.month
 
@@ -128,6 +130,72 @@ def set_budget(
     )
 
 
+def clear_budget(
+    db: Session,
+    user_id: int,
+    category_id: int,
+) -> BudgetResponse:
+    category = db.get(Category, category_id)
+
+    if not category or category.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "CATEGORY_NOT_FOUND",
+                    "message": "Category not found.",
+                }
+            },
+        )
+
+    if category.type != "expense":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error": {
+                    "code": "BUDGET_NOT_ALLOWED",
+                    "message": "Budgets can only be cleared for expense categories.",
+                }
+            },
+        )
+
+    now = datetime.now(IST)
+    year = now.year
+    month = now.month
+
+    budget = repository.get_budget(
+        db=db,
+        category_id=category_id,
+        year=year,
+        month=month,
+    )
+
+    if budget:
+        budget = repository.update_budget(
+            db=db,
+            budget=budget,
+            limit_amount=None,
+        )
+    else:
+        budget = repository.create_budget(
+            db=db,
+            category_id=category_id,
+            year=year,
+            month=month,
+            limit_amount=None,
+        )
+
+    return BudgetResponse(
+        budget_id=budget.budget_id,
+        category_id=category_id,
+        year=year,
+        month=month,
+        limit_amount=None,
+        created_at=budget.created_at,
+        updated_at=budget.updated_at,
+    )
+
+
 def delete_budget(
     db: Session,
     user_id: int,
@@ -146,27 +214,39 @@ def delete_budget(
             },
         )
 
-    now = datetime.now(timezone.utc)
-
-    budget = repository.get_budget(
-        db=db,
-        category_id=category_id,
-        year=now.year,
-        month=now.month,
-    )
-
-    if not budget:
+    if category.type != "expense":
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
+            status_code=status.HTTP_409_CONFLICT,
             detail={
                 "error": {
-                    "code": "BUDGET_NOT_FOUND",
-                    "message": "Budget not found for the current month.",
+                    "code": "BUDGET_NOT_ALLOWED",
+                    "message": "Budgets can only be cleared for expense categories.",
                 }
             },
         )
 
-    repository.delete_budget(
+    now = datetime.now(IST)
+    year = now.year
+    month = now.month
+
+    budget = repository.get_budget(
         db=db,
-        budget=budget,
+        category_id=category_id,
+        year=year,
+        month=month,
     )
+
+    if budget:
+        repository.update_budget(
+            db=db,
+            budget=budget,
+            limit_amount=None,
+        )
+    else:
+        repository.create_budget(
+            db=db,
+            category_id=category_id,
+            year=year,
+            month=month,
+            limit_amount=None,
+        )

@@ -219,7 +219,7 @@ def get_transaction_detail(
             month=transaction_month,
         )
 
-        if budget:
+        if budget is not None:
             spent = budget_repository.get_category_monthly_spent(
                 db=db,
                 category_id=category.category_id,
@@ -227,22 +227,23 @@ def get_transaction_detail(
                 month=transaction_month,
             )
 
-            remaining = budget.limit_amount - spent
+            if budget.limit_amount is not None:
+                remaining = budget.limit_amount - spent
 
-            percentage_used = (
-                (spent / budget.limit_amount) * Decimal("100")
-                if budget.limit_amount > 0
-                else Decimal("0")
-            )
+                percentage_used = (
+                    (spent / budget.limit_amount) * Decimal("100")
+                    if budget.limit_amount > 0
+                    else Decimal("0")
+                )
 
-            monthly_budget = MonthlyBudgetResponse(
-                year=transaction_year,
-                month=transaction_month,
-                limit=budget.limit_amount,
-                spent=spent,
-                remaining=remaining,
-                percentage_used=percentage_used,
-            )
+                monthly_budget = MonthlyBudgetResponse(
+                    year=transaction_year,
+                    month=transaction_month,
+                    limit=budget.limit_amount,
+                    spent=spent,
+                    remaining=remaining,
+                    percentage_used=percentage_used,
+                )
 
     return TransactionDetailResponse(
         transaction_id=transaction.transaction_id,
