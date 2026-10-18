@@ -26,6 +26,8 @@ jobs:
       JWT_ALGORITHM: HS256
       SMTP_HOST: localhost
       SMTP_PORT: 1025
+      SMTP_USERNAME: test@example.com
+      SMTP_PASSWORD: test-password
       SMTP_FROM_EMAIL: ci@example.com
       SMTP_FROM_NAME: SmartSpend CI
       FRONTEND_URL: http://localhost:3000
