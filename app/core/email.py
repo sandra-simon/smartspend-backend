@@ -1,24 +1,18 @@
 import smtplib
+import ssl
 from email.message import EmailMessage
-
 from app.core.config import settings
 
-
-def send_password_reset_email(
-    recipient_email: str,
-    reset_token: str,
-) -> None:
+def send_password_reset_email(recipient_email: str, reset_token: str) -> None:
     reset_link = (
         f"{settings.frontend_url}/reset-password"
         f"?token={reset_token}"
     )
 
     message = EmailMessage()
-
     message["Subject"] = "Reset your SmartSpend password"
     message["From"] = (
-        f"{settings.smtp_from_name} "
-        f"<{settings.smtp_from_email}>"
+        f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
     )
     message["To"] = recipient_email
 
@@ -40,8 +34,11 @@ SmartSpend
 """
     )
 
-    with smtplib.SMTP(
-        settings.smtp_host,
-        settings.smtp_port,
-    ) as smtp:
+    tls_context = ssl.create_default_context()
+
+    with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30) as smtp:
+        smtp.ehlo()
+        smtp.starttls(context=tls_context)
+        smtp.ehlo()
+        smtp.login(settings.smtp_username, settings.smtp_password)
         smtp.send_message(message)
