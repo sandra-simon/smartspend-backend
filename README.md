@@ -1,4 +1,4 @@
-# SmartSpend — Backend API
+# SmartSpend - Backend API
 
 The backend service for **SmartSpend**, a personal finance management application for tracking income and expenses, managing categories and monthly budgets, and analyzing spending through dashboards and analytics.
 
