@@ -5,11 +5,14 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
 
 from app.core.config import settings
 
 
-password_hash = PasswordHash.recommended()
+# Use Argon2id explicitly for password storage rather than relying on the
+# library's recommended-hasher defaults.
+password_hash = PasswordHash((Argon2Hasher(),))
 
 
 def hash_password(password: str) -> str:
