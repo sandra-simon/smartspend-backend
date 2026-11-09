@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:16
-    container_name: smartspend-db-fixed
+    container_name: smartspend-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -14,12 +14,12 @@ services:
 
   api:
     build: .
-    container_name: smartspend-api-fixed
+    container_name: smartspend-api
     restart: unless-stopped
     env_file:
       - .env
     ports:
-      - "8001:8000"
+      - "8000:8000"
     depends_on:
       - db
     volumes:
@@ -30,11 +30,11 @@ services:
 
   mailpit:
     image: axllent/mailpit:latest
-    container_name: smartspend-mailpit-fixed
+    container_name: smartspend-mailpit
     restart: unless-stopped
     ports:
-      - "1026:1025"
-      - "8026:8025"
+      - "1025:1025"
+      - "8025:8025"
 
 volumes:
   postgres_data:
